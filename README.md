@@ -2,7 +2,7 @@
 
 # Learning from a world on rails
 
-Unofficial Knet.jl implementation of "[https://arxiv.org/abs/2105.00636](Learning to drive from a world on rails)" (ICCV 21 Oral)
+Unofficial Knet.jl implementation of "[Learning to drive from a world on rails](https://arxiv.org/abs/2105.00636)" (ICCV 21 Oral)
 
 This version was implemented by Enes Erciyes for the Koç University COMP541 Course and ML Reproducibility Challenge 2021 Fall Edition. You can find the original implementation in [https://github.com/dotchen/WorldOnRails](https://github.com/dotchen/WorldOnRails).
 
