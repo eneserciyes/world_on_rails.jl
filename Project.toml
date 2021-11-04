@@ -1,7 +1,13 @@
-authors = ["merciyes18@ku.edu.tr",
-           "Enes M. Erciyes"]
 name = "WorldOnRails.jl"
-
+authors = ["merciyes18@ku.edu.tr", "Enes M. Erciyes"]
 version = "0.0.1"
 
 [deps]
+ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
+IJulia = "7073ff75-c697-5162-941a-fcdaad2a7d2a"
+Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
+Knet = "1902f260-5fb4-5aff-8c31-6271790ab950"
+LMDB = "11f193de-5e89-5f17-923a-7d207d56daf9"
+ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
+PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
+YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
