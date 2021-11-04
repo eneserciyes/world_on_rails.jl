@@ -1,0 +1,7 @@
+authors = ["merciyes18@ku.edu.tr",
+           "Enes M. Erciyes"]
+name = "WorldOnRails.jl"
+
+version = "0.0.1"
+
+[deps]
