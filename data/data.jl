@@ -35,7 +35,7 @@ struct MainDataset
 
             dbi = open(txn)
             
-            n = parse(Int64, LMDB.get(txn, dbi, "len", String))
+            n = parse(Int64, LMDB.get(txn, dbi, "len", String)) - config["num_plan"] # last num_plan labels are missing from the dataset
             if n < config["num_plan"]+1
                 print(full_path, " is too small. consider deleting")
                 close(env, dbi)
@@ -59,12 +59,17 @@ struct MainDataset
 end
 
 function access(tag::AbstractString, txn::Transaction, dbi::DBI, index::Int, T::Int, dtype::Type; preprocess = x->x)
-    preprocess.([LMDB.get(txn, dbi, "$(tag)_$(lpad(t, 5, '0'))", dtype) for t in index:index+(T-1)])
+    try
+        data = preprocess.([LMDB.get(txn, dbi, "$(tag)_$(lpad(t, 5, '0'))", dtype) for t in index:index+(T-1)])
+        reduce(hcat, data)
+    catch
+        @show tag
+    end
 end
 
 function get_item(d::MainDataset, state::Int)
     T = d.config["num_plan"]
-    idx = state
+    idx = state-1
     if !d.config["multi_cam"]
         idx *= length(d.config["camera_yaws"])
     end
@@ -73,7 +78,7 @@ function get_item(d::MainDataset, state::Int)
     lmdb_dbi = d.dbi_map[idx]
     index = d.idx_map[idx]
     cam_index = d.yaw_map[idx]
-
+    
     locs = access("loc", lmdb_txn, lmdb_dbi, index, T+1, Vector{Float32})
     rots = access("rot", lmdb_txn, lmdb_dbi, index, T, Vector{Float32})
     spds = access("spd", lmdb_txn, lmdb_dbi, index, T, Vector{Float32})
@@ -89,9 +94,6 @@ function get_item(d::MainDataset, state::Int)
 end
 
 Base.length(d::MainDataset) = (if (d.config["multi_cam"]) d.num_frames*length(d.config["camera_yaws"]) else d.num_frames end)
-Base.iterate(d::MainDataset, state=1) = state > length(d) ? nothing : get_item(d, state), state+1 
-
-DATA_ROOT = "/home/enes/avg/WoR/dataset"
-CONFIG_PATH = "/home/enes/avg/WoR/WorldOnRails/config.yaml"
+Base.iterate(d::MainDataset, state=1) = state > length(d) ? nothing : (get_item(d, state), state+1) 
 
 end
