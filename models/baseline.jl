@@ -1,5 +1,11 @@
 using Knet, Statistics, Random
 
+
+# Defining the convolutional layer:
+struct Conv; w; b; f; p; end
+(c::Conv)(x) = c.f.(pool(conv4(c.w, dropout(x,c.p)) .+ c.b))
+Conv(w1::Int,w2::Int,cx::Int,cy::Int,f=relu;pdrop=0) = Conv(param(w1,w2,cx,cy), param0(1,1,cy,1), f, pdrop)
+
 function init_model()
     w = Any[
         randn(Float32, (3, 3, 3, 8)) .* 0.1,

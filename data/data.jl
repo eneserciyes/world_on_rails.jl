@@ -60,8 +60,7 @@ end
 
 function access(tag::AbstractString, txn::Transaction, dbi::DBI, index::Int, T::Int, dtype::Type; preprocess = x->x)
     try
-        data = preprocess.([LMDB.get(txn, dbi, "$(tag)_$(lpad(t, 5, '0'))", dtype) for t in index:index+(T-1)])
-        reduce(hcat, data)
+        reduce(hcat, preprocess.([LMDB.get(txn, dbi, "$(tag)_$(lpad(t, 5, '0'))", dtype) for t in index:index+(T-1)]))
     catch
         @show tag
     end
@@ -84,10 +83,10 @@ function get_item(d::MainDataset, state::Int)
     spds = access("spd", lmdb_txn, lmdb_dbi, index, T, Vector{Float32})
     
     decode = (x -> FileIO.load(IOBuffer(x)))
-    lbls = [access("lbl_$(lpad(l, 2, '0'))", lmdb_txn, lmdb_dbi, index+1, T, Vector{UInt8}; preprocess=decode) for l in 0:11]
-    wide_rgb = access("wide_$(cam_index)", lmdb_txn, lmdb_dbi, index, 1, Vector{UInt8}; preprocess=decode)
-    wide_sem = access("wide_sem_$(cam_index)", lmdb_txn, lmdb_dbi, index, 1, Vector{UInt8}; preprocess=decode)
-    narr_rgb = access("narr_$(cam_index)", lmdb_txn, lmdb_dbi, index, 1, Vector{UInt8}; preprocess=decode)
+    lbls = [access("lbl_$(lpad(l, 2, '0'))", lmdb_txn, lmdb_dbi, index+1, T, Vector{UInt8}; preprocess=decode) |> channelview for l in 0:11]
+    wide_rgb = access("wide_$(cam_index)", lmdb_txn, lmdb_dbi, index, 1, Vector{UInt8}; preprocess=decode) |> channelview
+    wide_sem = access("wide_sem_$(cam_index)", lmdb_txn, lmdb_dbi, index, 1, Vector{UInt8}; preprocess=decode) |> channelview
+    narr_rgb = access("narr_$(cam_index)", lmdb_txn, lmdb_dbi, index, 1, Vector{UInt8}; preprocess=decode) |> channelview
     
     cmd = access("cmd", lmdb_txn, lmdb_dbi, index, 1, Float32)
     wide_rgb, wide_sem, narr_rgb, lbls, locs, rots, spds, trunc.(Int, cmd)
