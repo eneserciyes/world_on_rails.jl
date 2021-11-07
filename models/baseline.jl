@@ -1,49 +1,25 @@
 using Knet, Statistics, Random
 
-
 # Defining the convolutional layer:
 struct Conv; w; b; f; p; end
 (c::Conv)(x) = c.f.(pool(conv4(c.w, dropout(x,c.p)) .+ c.b))
 Conv(w1::Int,w2::Int,cx::Int,cy::Int,f=relu;pdrop=0) = Conv(param(w1,w2,cx,cy), param0(1,1,cy,1), f, pdrop)
 
-function init_model()
-    w = Any[
-        randn(Float32, (3, 3, 3, 8)) .* 0.1,
-        randn(Float32, (3, 3, 8, 16)) .* 0.1,
-        randn(Float32, (20, 64 * 36 * 16 + 1)) .* 0.1,
-        zeros((20)),
-        randn(Float32, (2, 20)) .* 0.1,
-        zeros((2))
-        ]
-    w = map(Knet.array_type[], w)    
-end
+# Defining dense layer
+struct Dense; w; b; f; p; end
+(d::Dense)(x) = d.f.(d.w * mat(dropout(x,d.p)) .+ d.b) # mat reshapes 4-D tensor to 2-D matrix so we can use matmul
+Dense(i::Int,o::Int,f=relu;pdrop=0) = Dense(param(o,i), param0(o), f, pdrop)
 
-function conv_layer(w, x)
-    x = conv4(w[1], x, padding=1, stride=2)
-    x = relu.(x)
+struct Chain
+    layers
+    Chain(layers...) = new(layers)
 end
+(c::Chain)(x) = (for l in c.layers; x = l(x); end; x)
+(c::Chain)(x,y) = nll(c(x),y)
 
-function lin_layer(w, x)
-    x = w[1] * x
-    x = w[2] .+ x
+struct BaselineRandomAgent
+    chain::Chain
 end
+(b::BaselineRandomAgent)(img) = b.chain(img)
+(b::BaselineRandomAgent)(img, actions) = sum(abs.(b(img) .- actions))
 
-function predict(w, x, speed)
-    x = conv_layer(w[1:1], x)
-    x = conv_layer(w[2:2], x)
-    x = lin_layer(w[3:4], vcat(mat(x), transpose(speed)))
-    x = lin_layer(w[5:6], x)
-end
-
-function loss(w, x, speed, actions)
-    act_preds = predict(w, x, speed)
-    sum(abs.(act_preds .- actions))
-end
-
-struct Baseline
-    w
-end
-
-Baseline() = Baseline(init_model())
-(b::Baseline)(rgb, speed) = (predict(b.w, rgb, speed))
-(b::Baseline)(rgb, speed, actions) = loss(b.w, rgb, speed, actions)

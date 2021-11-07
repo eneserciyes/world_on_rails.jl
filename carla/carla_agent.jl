@@ -9,7 +9,7 @@ function run_step(img, speed, command)
 
     speed = KnetArray{Float32}([speed])
 
-    preds = model(img, speed)
+    preds = model(img)
     throttle = preds[1,1]
     steer = preds[2,1]
     return return throttle, steer

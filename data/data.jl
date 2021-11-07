@@ -84,7 +84,7 @@ function get_item(d::MainDataset, state::Int)
     
     decode = (x -> FileIO.load(IOBuffer(x)))
     lbls = [access("lbl_$(lpad(l, 2, '0'))", lmdb_txn, lmdb_dbi, index+1, T, Vector{UInt8}; preprocess=decode) |> channelview for l in 0:11]
-    wide_rgb = access("wide_$(cam_index)", lmdb_txn, lmdb_dbi, index, 1, Vector{UInt8}; preprocess=decode) |> channelview
+    wide_rgb = permuteddimsview(access("wide_$(cam_index)", lmdb_txn, lmdb_dbi, index, 1, Vector{UInt8}; preprocess=decode) |> channelview, (2,3,1))
     wide_sem = access("wide_sem_$(cam_index)", lmdb_txn, lmdb_dbi, index, 1, Vector{UInt8}; preprocess=decode) |> channelview
     narr_rgb = access("narr_$(cam_index)", lmdb_txn, lmdb_dbi, index, 1, Vector{UInt8}; preprocess=decode) |> channelview
     
