@@ -29,6 +29,7 @@ end
 
 (m::EgoModel)(locs, yaws, spds, acts) =
 begin
+    
 end
 
 end
