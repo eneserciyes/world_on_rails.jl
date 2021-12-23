@@ -23,4 +23,8 @@ docs/site/
 # environment.
 Manifest.toml
 
+# data
+data/
+
+# notebooks
 *.ipynb_checkpoints*
