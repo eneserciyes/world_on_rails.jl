@@ -1,7 +1,31 @@
 module models
-export Conv, Dense, Chain
+export Conv, Dense, Chain, train!, set_optim!, zero_grad_model
 
 using Knet, Statistics, Random
+
+function zero_grad_model(model)
+    for p in params(model)
+        zero_grad(p.opt)
+    end
+
+function zero_grad(optim::Adam)
+    # gradient resetting
+    layer1.opt.fstm = Nothing
+    layer1.opt.scndm = Nothing
+
+function set_optim!(model, optim, learning_rate)
+    for p in params(model)
+        p.opt = optim(lr=learning_rate)
+    end
+
+function train!(model, L)
+    for p in params(model)
+        g = grad(L, p)
+        update!(value(p), value(g), p.opt)
+    end
+    return value(L)
+end
+
 
 # Defining the convolutional layer:
 struct Conv

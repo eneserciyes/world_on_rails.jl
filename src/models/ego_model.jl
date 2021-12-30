@@ -29,8 +29,18 @@ end
 
 (m::EgoModel)(locs, yaws, spds, acts) =
 begin
+    steer = selectdim(acts, length(size(acts)), 1:1)
+    throt = selectdim(acts, length(size(acts)), 2:2)
+    brake = convert(KnetArray{UInt8}, selectdim(acts, length(size(acts)), 3:3))
     
-end
+    # accel = 
+    wheel = m.steer_gain .* steer
 
+    beta = atan.(m.rear_wb/(m.front_wb + m.rear_wb) .* wheel)
+    next_locs = locs + spds .* cat(cos.(yaws+beta), sin.(yaws+beta);dims=length(size(beta)))
+    next_yaws = yaws + spds ./ m.rear_wb .* sin.(beta) * m.dt
+    next_spds = spds + dt .* accel
+    return next_locs, next_yaws, relu(next_spds)
+end
 end
 

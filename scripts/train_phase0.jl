@@ -17,6 +17,8 @@ function parse_cil()
             help = "main configuration file"
         "--device"
             help = "cpu or cuda"
+        "--lr"
+            help = "learning rate"
     end
     return parse_args(s)
 end
