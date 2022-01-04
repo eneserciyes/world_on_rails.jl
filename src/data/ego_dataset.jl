@@ -1,5 +1,8 @@
 module ego_dataset
+
 using NPZ
+using Random: randperm
+
 
 export EgoDataset
 
@@ -17,7 +20,8 @@ struct EgoDataset
         idx_map = Dict{Int,Int}()
 
         for fullpath in readdir(data_dir, join = true)
-            len = length(readdir(fullpath))
+            len = length(readdir(fullpath)) ÷ 4 # folder contains loc,rot,spd,act for each frame
+            @show len
             if len < T
                 continue
             end
@@ -54,12 +58,12 @@ struct EgoDataset
         new(T, num_frames, episodes, episode_map, idx_map)
     end
 end
+
 function Base.length(d::EgoDataset)
     return d.num_frames
 end
 
-(d::EgoDataset)(idx::Int) = 
-begin 
+function Base.getindex(d::EgoDataset, idx::Int) 
     episode_idx = d.episode_map[idx]
     index = d.idx_map[idx]
 
@@ -70,5 +74,35 @@ begin
     acts = episode[4][index:index+d.T-1, :]
     return locs, rots, spds, acts
 end
+
+mutable struct EgoDatasetLoader
+    ego_dataset::EgoDataset
+    batchsize::Int
+    shuffle::Bool
+    imax
+    indices
+
+    function EgoDatasetLoader(ego_dataset::EgoDataset, batchsize; shuffle=false)
+        imax = length(ego_dataset) - (length(ego_dataset) % batchsize)
+        new(ego_dataset, batchsize, shuffle, imax, 1:length(ego_dataset))
+    end
+end
+
+function Base.iterate(d::EgoDatasetLoader, i=1)
+    len = length(d.ego_dataset)
+    if i > d.imax
+        return nothing
+    end
+
+    if d.shuffle && i==0
+        d.indices = randperm(len)
+    end
+    nexti = min(i+d.batchsize-1, len)
+    ids = d.indices[i: nexti]
+    @show ids
+    datum = [d.ego_dataset[idx] for idx in ids]
+    return datum
+end
+
 
 end
