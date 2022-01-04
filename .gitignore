@@ -28,3 +28,4 @@ data/
 !src/data/
 # notebooks
 *.ipynb_checkpoints*
+.vscode/
