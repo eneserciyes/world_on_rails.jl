@@ -4,7 +4,7 @@ using NPZ
 using Random: randperm
 
 
-export EgoDataset
+export EgoDataset, compile_data
 
 struct EgoDataset
     T::Int
@@ -119,4 +119,7 @@ function Base.iterate(d::EgoDatasetLoader, i=1)
 end
 
 
+function compile_data(args)
+    ego_data = EgoDataset(args.data_dir, args.traj_len)
+    return EgoDatasetLoader(ego_data, args.batchsize; shuffle=args.shuffle)
 end
