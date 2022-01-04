@@ -33,7 +33,7 @@ begin
     throt = selectdim(acts, length(size(acts)), 2:2)
     brake = convert(KnetArray{UInt8}, selectdim(acts, length(size(acts)), 3:3))
     
-    # accel = 
+    # accel = #TODO: do acceleration calculation
     wheel = m.steer_gain .* steer
 
     beta = atan.(m.rear_wb/(m.front_wb + m.rear_wb) .* wheel)
