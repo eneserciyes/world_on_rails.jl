@@ -94,14 +94,28 @@ function Base.iterate(d::EgoDatasetLoader, i=1)
         return nothing
     end
 
-    if d.shuffle && i==0
+    if d.shuffle && i==1
         d.indices = randperm(len)
     end
     nexti = min(i+d.batchsize-1, len)
-    ids = d.indices[i: nexti]
+    ids = d.indices[i:nexti]
     @show ids
-    datum = [d.ego_dataset[idx] for idx in ids]
-    return datum
+
+    locs_batch = zeros(d.ego_dataset.T, 3, d.batchsize)
+    rots_batch = zeros(d.ego_dataset.T, 3, d.batchsize)
+    spds_batch = zeros(d.ego_dataset.T, 1, d.batchsize)
+    acts_batch = zeros(d.ego_dataset.T, 3, d.batchsize)
+
+    for idx = ids
+        locs, rots, spds, acts = d.ego_dataset[idx]
+        batch_idx = (idx-1)%16 + 1
+        locs_batch[:,:,batch_idx] = locs
+        rots_batch[:,:,batch_idx] = rots
+        spds_batch[:,:,batch_idx] = spds
+        acts_batch[:,:,batch_idx] = acts
+    end
+    
+    return ((locs_batch, rots_batch, spds_batch, acts_batch), nexti+1)
 end
 
 
