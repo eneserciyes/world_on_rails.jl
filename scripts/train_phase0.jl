@@ -8,6 +8,23 @@ using ego_dataset: compile_data
 
 using ArgParse
 
+
+function main(args)
+    rails = RAILS(args)
+    data = compile_data(args)
+    
+    counter = 0
+    for epoch = 1:args.num_epoch
+        for (locs, rots, spds, acts) = data
+            opt_info = rails.train_ego(locs, rots, spds, acts)
+            if counter % args.num_per_log == 0
+                #logger.log_ego(opt_info) #TODO: implement the logger
+            end
+            counter += 1
+        end
+    end 
+end
+
 function parse_cil()
     s = ArgParseSettings()
     @add_arg_table s begin
@@ -41,23 +58,5 @@ function parse_cil()
     return parse_args(s)
 end
 
-function main()
-    args = parse_cil()
-    rails = RAILS(args)
-    data = compile_data(args)
-
-    counter = 0
-    for epoch = 1:args.num_epoch
-        for (locs, rots, spds, acts) = data
-            opt_info = rails.train_ego(locs, rots, spds, acts)
-            if counter % args.num_per_log == 0
-                #logger.log_ego(opt_info) #TODO: implement the logger
-            end
-            counter += 1
-        end
-    end
-
-    
-end
-
-main()
+args = parse_cil()
+main(args)
