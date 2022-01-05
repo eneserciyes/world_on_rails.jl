@@ -21,7 +21,6 @@ struct EgoDataset
 
         for fullpath in readdir(data_dir, join = true)
             len = length(readdir(fullpath)) ÷ 4 # folder contains loc,rot,spd,act for each frame
-            @show len
             if len < T
                 continue
             end
