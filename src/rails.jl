@@ -60,4 +60,7 @@ function train_ego(r::RAILS, locs, rots, spds, acts)
         "pred_locs" => Array(pred_locs), "pred_yaws" => Array(pred_yaws),
         "locs" => Array(locs), "yaws" => Array(yaws))
 end
+
+function train_main(r::RAILS, wide_rgbs, wide_sems, narr_rgbs, narr_sems, act_vals, spds, cmds)
+    #TODO: train main
 end

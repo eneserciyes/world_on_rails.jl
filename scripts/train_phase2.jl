@@ -1,3 +1,8 @@
+push!(LOAD_PATH, joinpath(dirname(pwd()), "src", "data"));
+push!(LOAD_PATH, joinpath(dirname(pwd()), "src"));
+
+using rails: RAILS
+using main_dataset: compile_data
 
 function main(args)
     rails = RAILS(args)

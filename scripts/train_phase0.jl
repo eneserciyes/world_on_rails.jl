@@ -1,9 +1,7 @@
-push!(LOAD_PATH, joinpath(dirname(pwd()), "src", "models"));
 push!(LOAD_PATH, joinpath(dirname(pwd()), "src", "data"));
 push!(LOAD_PATH, joinpath(dirname(pwd()), "src"));
 
 using rails: RAILS
-using ego_model: EgoModel
 using ego_dataset: compile_data
 
 using ArgParse
