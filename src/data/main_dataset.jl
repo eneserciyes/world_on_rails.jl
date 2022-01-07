@@ -86,9 +86,26 @@ function load_img(path::AbstractString)
     return permuteddimsview(img |> channelview, (2, 3, 1)) # (H,W, Channel) shaped 0-1 interval image. 
 end
 
-function read_sem(path::AbstractString)
-    #TODO: read wide_sem and narr_sem
-    #TODO: do filtering here as well
+semantic_mapping = [
+    ([220, 20, 60], 4), # pedestrian
+    ([157, 234, 50], 6), # road line
+    ([128, 64, 128], 7), # Road
+    ([244, 35, 232], 8), # SideWalk
+    ([0, 0, 142], 10), # Vehicles
+    ([250, 170, 30], 18) # Traffic Light
+]
+
+function read_sem(path::AbstractString, filter_classes::Vector)
+    segimg = load_img(path) * 255
+    segimg_con = zeros(Float32, size(segimg)[1:2])
+
+    for (i,(key,value)) in enumerate(semantic_mapping)
+        if (value in filter_classes)
+            mask = (segimg[:,:,1] .== key[1]) .& (segimg[:,:,2] .== key[2]) .& (segimg[:,:,3] .== key[3])
+            segimg_con[mask] .= i
+        end
+    end
+    return segimg_con
 end
 
 function augment(img::Array)
@@ -106,10 +123,9 @@ function Base.getindex(d::LabeledMainDataset, idx::Int)
     path = d.path_map[idx]
 
     wide_rgb = load_img(joinpath(path, "rgbs", "wide_$(cam_index)_$(lpad(index,5,"0")).jpg"))
-    wide_sem = read_sem(joinpath(path, "rgbs", "wide_sem_$(cam_index)_$(lpad(index,5,"0")).png"))
+    wide_sem = read_sem(joinpath(path, "rgbs", "wide_sem_$(cam_index)_$(lpad(index,5,"0")).png"), d.seg_channels)
     narr_rgb = load_img(joinpath(path, "rgbs", "narr_$(cam_index)_$(lpad(index,5,"0")).jpg"))
-    narr_sem = read_sem(joinpath(path, "rgbs", "narr_sem_$(cam_index)_$(lpad(index,5,"0")).png"))
-    #narr_sem = selectdim(narr_sem, length(size(narr_sem)), 3) #might not need this.
+    narr_sem = read_sem(joinpath(path, "rgbs", "narr_sem_$(cam_index)_$(lpad(index,5,"0")).png"), d.seg_channels)
 
     cmd = data_json[string(index)]["cmd"]
     spd = data_json[string(index)]["spd"]
@@ -119,20 +135,16 @@ function Base.getindex(d::LabeledMainDataset, idx::Int)
 
     # Crop cameras
     wide_rgb = wide_rgb[d.wide_crop_top:end, :, :] #TODO: check if reversing required here.
-    #wide_sem = wide_sem[d.wide_crop_top:end]
+    wide_sem = wide_sem[d.wide_crop_top:end,:]
     narr_rgb = narr_rgb[begin:end-d.narr_crop_bottom, :, :] #TODO: check if reversing required here.
-    #narr_sem = narr_sem[begin:end-d.narr_crop_bottom]
+    narr_sem = narr_sem[begin:end-d.narr_crop_bottom,:]
 
     #Augment
     # wide_rgb = augment(wide_rgb)
     # narr_rgb = augment(narr_rgb)
 
-    # return (KnetArray{Float32}(wide_rgb), KnetArray{Float32}(wide_sem),
-    #     KnetArray{Float32}(narr_rgb), KnetArray{Float32}(narr_sem),
-    #     KnetArray{Float32}(act_val), Float32(spd), Float32(cmd))
-
-    return (KnetArray{Float32}(wide_rgb),
-        KnetArray{Float32}(narr_rgb),
+    return (KnetArray{Float32}(wide_rgb), KnetArray{Float32}(wide_sem),
+        KnetArray{Float32}(narr_rgb), KnetArray{Float32}(narr_sem),
         KnetArray{Float32}(act_val), Float32(spd[1]), Float32(cmd[1]))
 
 end
