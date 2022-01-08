@@ -9,19 +9,27 @@ using Images
 using Images.FileIO
 
 using Knet: KnetArray
+using PyCall
+
+const ia = PyNULL()
+
+function __init__()
+    copy!(ia, pyimport("imgaug"))
+end
 
 struct LabeledMainDataset
     #TODO: main dataset
     T::Int
-    camera_yaws
-    wide_crop_top
-    narr_crop_bottom
-    seg_channels
-    num_speeds
-    num_steers
-    num_throts
-    multi_cam # ablation option
-    num_frames
+    camera_yaws::Any
+    wide_crop_top::Any
+    narr_crop_bottom::Any
+    seg_channels::Any
+    num_speeds::Any
+    num_steers::Any
+    num_throts::Any
+    multi_cam::Any # ablation option
+    num_frames::Any
+    augmenter::Any
 
     idx_map::Dict
     yaw_map::Dict
@@ -69,10 +77,11 @@ struct LabeledMainDataset
             config["num_throts"],
             config["multi_cam"],
             num_frames,
+            augment(),
             idx_map,
             yaw_map,
             json_map,
-            path_map
+            path_map,
         )
     end
 end
@@ -92,24 +101,28 @@ semantic_mapping = [
     ([128, 64, 128], 7), # Road
     ([244, 35, 232], 8), # SideWalk
     ([0, 0, 142], 10), # Vehicles
-    ([250, 170, 30], 18) # Traffic Light
+    ([250, 170, 30], 18), # Traffic Light
 ]
 
 function read_sem(path::AbstractString, filter_classes::Vector)
     segimg = load_img(path) * 255
     segimg_con = zeros(Float32, size(segimg)[1:2])
 
-    for (i,(key,value)) in enumerate(semantic_mapping)
+    for (i, (key, value)) in enumerate(semantic_mapping)
         if (value in filter_classes)
-            mask = (segimg[:,:,1] .== key[1]) .& (segimg[:,:,2] .== key[2]) .& (segimg[:,:,3] .== key[3])
+            mask =
+                (segimg[:, :, 1] .== key[1]) .&
+                (segimg[:, :, 2] .== key[2]) .&
+                (segimg[:, :, 3] .== key[3])
             segimg_con[mask] .= i
         end
     end
     return segimg_con
 end
 
-function augment(img::Array)
-    #TODO: use PyCall to call preprocessing here. 
+function augment_img(augmenter::PyObject, img::Array)
+    #TODO: use PyCall to call preprocessing here.
+    return augmenter(img)
 end
 
 function Base.getindex(d::LabeledMainDataset, idx::Int)
@@ -122,31 +135,74 @@ function Base.getindex(d::LabeledMainDataset, idx::Int)
     data_json = d.json_map[idx]
     path = d.path_map[idx]
 
-    wide_rgb = load_img(joinpath(path, "rgbs", "wide_$(cam_index)_$(lpad(index,5,"0")).jpg"))
-    wide_sem = read_sem(joinpath(path, "rgbs", "wide_sem_$(cam_index)_$(lpad(index,5,"0")).png"), d.seg_channels)
-    narr_rgb = load_img(joinpath(path, "rgbs", "narr_$(cam_index)_$(lpad(index,5,"0")).jpg"))
-    narr_sem = read_sem(joinpath(path, "rgbs", "narr_sem_$(cam_index)_$(lpad(index,5,"0")).png"), d.seg_channels)
+    wide_rgb =
+        load_img(joinpath(path, "rgbs", "wide_$(cam_index)_$(lpad(index,5,"0")).jpg"))
+    wide_sem = read_sem(
+        joinpath(path, "rgbs", "wide_sem_$(cam_index)_$(lpad(index,5,"0")).png"),
+        d.seg_channels,
+    )
+    narr_rgb =
+        load_img(joinpath(path, "rgbs", "narr_$(cam_index)_$(lpad(index,5,"0")).jpg"))
+    narr_sem = read_sem(
+        joinpath(path, "rgbs", "narr_sem_$(cam_index)_$(lpad(index,5,"0")).png"),
+        d.seg_channels,
+    )
 
     cmd = data_json[string(index)]["cmd"]
     spd = data_json[string(index)]["spd"]
 
-    act_val = reshape(data_json[string(index)]["act$(cam_index)"], (d.num_speeds, d.num_steers * d.num_throts + 1, 6))
-    act_val = permutedims(act_val, (2,1,3)) # permute dims because julia is column-major
+    act_val = reshape(
+        data_json[string(index)]["act$(cam_index)"],
+        (d.num_speeds, d.num_steers * d.num_throts + 1, 6),
+    )
+    act_val = permutedims(act_val, (2, 1, 3)) # permute dims because julia is column-major
 
     # Crop cameras
     wide_rgb = wide_rgb[d.wide_crop_top:end, :, :] #TODO: check if reversing required here.
-    wide_sem = wide_sem[d.wide_crop_top:end,:]
+    wide_sem = wide_sem[d.wide_crop_top:end, :]
     narr_rgb = narr_rgb[begin:end-d.narr_crop_bottom, :, :] #TODO: check if reversing required here.
-    narr_sem = narr_sem[begin:end-d.narr_crop_bottom,:]
+    narr_sem = narr_sem[begin:end-d.narr_crop_bottom, :]
 
     #Augment
-    # wide_rgb = augment(wide_rgb)
-    # narr_rgb = augment(narr_rgb)
+    wide_rgb = augment_img(d.augmenter, wide_rgb)
+    narr_rgb = augment_img(d.augmenter, narr_rgb)
 
-    return (KnetArray{Float32}(wide_rgb), KnetArray{Float32}(wide_sem),
-        KnetArray{Float32}(narr_rgb), KnetArray{Float32}(narr_sem),
-        KnetArray{Float32}(act_val), Float32(spd[1]), Float32(cmd[1]))
+    return (
+        KnetArray{Float32}(wide_rgb),
+        KnetArray{Float32}(wide_sem),
+        KnetArray{Float32}(narr_rgb),
+        KnetArray{Float32}(narr_sem),
+        KnetArray{Float32}(act_val),
+        Float32(spd[1]),
+        Float32(cmd[1]),
+    )
 
+end
+
+function augment(prob = 0.2)
+    iaa = ia.augmenters
+    return iaa.Sequential(  
+        [
+            iaa.Sometimes(prob, iaa.GaussianBlur((0, 0.5))),
+            iaa.Sometimes(
+                prob,
+                iaa.AdditiveGaussianNoise(
+                    loc = 0,
+                    scale = (0.0, 0.05 * 255),
+                    per_channel = 0.5,
+                ),
+            ),
+            iaa.Sometimes(prob, iaa.Dropout((0.01, 0.1), per_channel = 0.5)),
+            iaa.Sometimes(prob, iaa.Multiply((1 / 1.2, 1.2), per_channel = 0.5)),
+            iaa.Sometimes(prob, iaa.LinearContrast((1 / 1.2, 1.2), per_channel = 0.5)),
+            iaa.Sometimes(prob, iaa.Grayscale((0.0, 1))),
+            iaa.Sometimes(
+                prob,
+                iaa.ElasticTransformation(alpha = (0.5, 3.5), sigma = 0.25),
+            ),
+        ],
+        random_order = true,
+    )
 end
 
 struct LabeledMainDatasetLoader
