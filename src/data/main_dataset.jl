@@ -22,7 +22,6 @@ function get_augmenter()
 end
 
 struct LabeledMainDataset
-    #TODO: main dataset
     T::Int
     camera_yaws::Any
     wide_crop_top::Any
@@ -125,7 +124,6 @@ function read_sem(path::AbstractString, filter_classes::Vector)
 end
 
 function augment_img(augmenter::PyObject, img::Array)
-    #TODO: use PyCall to call preprocessing here.
     return augmenter(images=reshape(img, (1,size(img)...)))
 end
 
@@ -162,9 +160,9 @@ function Base.getindex(d::LabeledMainDataset, idx::Int)
     act_val = permutedims(act_val, (2, 1, 3)) # permute dims because julia is column-major
 
     # Crop cameras
-    wide_rgb = wide_rgb[d.wide_crop_top:end, :, :] #TODO: check if reversing required here.
+    wide_rgb = wide_rgb[d.wide_crop_top:end, :, :] 
     wide_sem = wide_sem[d.wide_crop_top:end, :]
-    narr_rgb = narr_rgb[begin:end-d.narr_crop_bottom, :, :] #TODO: check if reversing required here.
+    narr_rgb = narr_rgb[begin:end-d.narr_crop_bottom, :, :]
     narr_sem = narr_sem[begin:end-d.narr_crop_bottom, :]
 
     #Augment
@@ -172,11 +170,11 @@ function Base.getindex(d::LabeledMainDataset, idx::Int)
     narr_rgb = augment_img(d.augmenter, narr_rgb)
 
     return (
-        KnetArray{UInt8}(wide_rgb),
-        KnetArray{UInt8}(wide_sem),
-        KnetArray{UInt8}(narr_rgb),
-        KnetArray{UInt8}(narr_sem),
-        KnetArray{Float32}(act_val),
+        wide_rgb,
+        wide_sem,
+        narr_rgb,
+        narr_sem,
+        act_val,
         Float32(spd[1]),
         Float32(cmd[1]),
     )
