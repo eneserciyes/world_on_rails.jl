@@ -26,6 +26,7 @@ seg_channels: [4,6,7,10,18]
 seg_weight: 0.05
 wide_crop_top: 48
 narr_crop_bottom: 80
+augment: False
 imagenet_pretrained: True
 log_wandb: True
 noise_collect: False

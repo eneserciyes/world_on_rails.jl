@@ -1,4 +1,6 @@
 from imgaug import augmenters as iaa
+import imgaug as ia
+ia.seed(1)
 
 def augment(prob=0.2):
     

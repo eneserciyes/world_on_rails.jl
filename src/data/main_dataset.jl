@@ -32,6 +32,7 @@ struct LabeledMainDataset
     num_throts::Any
     multi_cam::Any # ablation option
     num_frames::Any
+    augment::Bool
     augmenter::Any
 
     idx_map::Dict
@@ -80,6 +81,7 @@ struct LabeledMainDataset
             config["num_throts"],
             config["multi_cam"],
             num_frames,
+            config["augment"],
             get_augmenter(),
             idx_map,
             yaw_map,
@@ -90,7 +92,11 @@ struct LabeledMainDataset
 end
 
 function Base.length(d::LabeledMainDataset)
-    return d.num_frames
+    if d.multi_cam
+        return d.num_frames * length(d.camera_yaws)
+    else
+        return d.num_frames
+    end
 end
 
 function load_img(path::AbstractString)
@@ -128,9 +134,6 @@ function augment_img(augmenter::PyObject, img::Array)
 end
 
 function Base.getindex(d::LabeledMainDataset, idx::Int)
-    if !d.multi_cam
-        idx *= length(d.camera_yaws)
-    end
 
     index = d.idx_map[idx] - 1 # json idxs start from zero
     cam_index = d.yaw_map[idx] - 1 # cam idxs in json start from zero
@@ -165,9 +168,12 @@ function Base.getindex(d::LabeledMainDataset, idx::Int)
     narr_rgb = narr_rgb[begin:end-d.narr_crop_bottom, :, :]
     narr_sem = narr_sem[begin:end-d.narr_crop_bottom, :]
 
+    @show(size(wide_rgb))
     #Augment
-    wide_rgb = augment_img(d.augmenter, wide_rgb)
-    narr_rgb = augment_img(d.augmenter, narr_rgb)
+    if d.augment
+        wide_rgb = augment_img(d.augmenter, wide_rgb)
+        narr_rgb = augment_img(d.augmenter, narr_rgb)
+    end
 
     return (
         wide_rgb,
@@ -186,5 +192,4 @@ end
 function compile_data()
     #TODO: complete compile data
 end
-
 end

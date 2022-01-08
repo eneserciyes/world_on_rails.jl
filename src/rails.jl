@@ -86,7 +86,6 @@ function train_main(
     spds,
     cmds,
 )
-    #TODO: train main
     wide_rgbs = KnetArray{Float32}(permutedims(Float32.(wide_rgbs), (1, 4, 2, 3)))
     narr_rgbs = KnetArray{Float32}(permutedims(Float32.(narr_rgbs), (1, 4, 2, 3)))
     wide_sems = KnetArray{Int64}(Int64.(wide_sems))
@@ -94,7 +93,6 @@ function train_main(
 
     act_vals = KnetArray{Float32}(permutedims(act_vals, (1, 2, 4, 3)))
     # no change for spds and cmds
-
 
     # pass through model
     act_probs = softmax(act_vals, dims = 4) #TODO: check if softmax value is same
