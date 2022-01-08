@@ -8,6 +8,7 @@ import main_dataset:LabeledMainDataset
 
 @testset "Main Dataset tests" begin
     using PyCall
+    using Knet:KnetArray
 
     main_dataset = LabeledMainDataset("/home/enes/avg/WoR/world_on_rails.jl/data/main_mini",
      "/home/enes/avg/WoR/world_on_rails.jl/configs/config.yaml")
@@ -19,9 +20,10 @@ import main_dataset:LabeledMainDataset
     # test rgb image reading
     (wide_rgb, wide_sem, narr_rgb, narr_sem, act_val, spd, cmd) = main_dataset[1]
 
-    # test image type
-    @test isa(wide_rgb, Array{UInt8})
-    @test size(wide_rgb) == (240 - main_dataset.wide_crop_top + 1,480,3)
+    # test image type and size
+    @test isa(wide_rgb, KnetArray{UInt8})
+    @test isa(narr_rgb, KnetArray{UInt8})
+    @test size(wide_rgb) == (1, 240 - main_dataset.wide_crop_top + 1,480,3)
 
     # test rgb image augmentations
     #TODO

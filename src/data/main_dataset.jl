@@ -11,6 +11,7 @@ using Images.FileIO
 using Knet: KnetArray
 using PyCall
 
+include("transformations.jl")
 
 function __init__()
     @pyinclude("src/data/augment.py")
@@ -95,7 +96,7 @@ end
 
 function load_img(path::AbstractString)
     img = FileIO.load(path)
-    return permuteddimsview(img |> channelview, (2, 3, 1)) # (H,W, Channel) shaped 0-1 interval image. 
+    return to_tensor(img) # (H,W, Channel) shaped 0-1 interval image. 
 end
 
 semantic_mapping = [
@@ -109,7 +110,7 @@ semantic_mapping = [
 
 function read_sem(path::AbstractString, filter_classes::Vector)
     segimg = load_img(path) * 255
-    segimg_con = zeros(Float32, size(segimg)[1:2])
+    segimg_con = zeros(UInt8, size(segimg)[1:2])
 
     for (i, (key, value)) in enumerate(semantic_mapping)
         if (value in filter_classes)
@@ -125,7 +126,7 @@ end
 
 function augment_img(augmenter::PyObject, img::Array)
     #TODO: use PyCall to call preprocessing here.
-    return augmenter(images=reshape(img, (1,size(img))))
+    return augmenter(images=reshape(img, (1,size(img)...)))
 end
 
 function Base.getindex(d::LabeledMainDataset, idx::Int)
@@ -171,17 +172,15 @@ function Base.getindex(d::LabeledMainDataset, idx::Int)
     narr_rgb = augment_img(d.augmenter, narr_rgb)
 
     return (
-        KnetArray{Float32}(wide_rgb),
-        KnetArray{Float32}(wide_sem),
-        KnetArray{Float32}(narr_rgb),
-        KnetArray{Float32}(narr_sem),
+        KnetArray{UInt8}(wide_rgb),
+        KnetArray{UInt8}(wide_sem),
+        KnetArray{UInt8}(narr_rgb),
+        KnetArray{UInt8}(narr_sem),
         KnetArray{Float32}(act_val),
         Float32(spd[1]),
         Float32(cmd[1]),
     )
-
 end
-
 struct LabeledMainDatasetLoader
     #TODO: main dataset loader
 end
