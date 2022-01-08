@@ -26,6 +26,7 @@ Manifest.toml
 # data
 data/
 !src/data/
+!test/data/
 # notebooks
 *.ipynb_checkpoints*
 .vscode/

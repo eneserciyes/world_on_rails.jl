@@ -1,6 +1,6 @@
 module main_dataset
 
-export compile_data, LabeledMainDataset
+export compile_data, LabeledMainDataset, augment_img
 
 using YAML
 using JSON
@@ -11,10 +11,13 @@ using Images.FileIO
 using Knet: KnetArray
 using PyCall
 
-const ia = PyNULL()
 
 function __init__()
-    copy!(ia, pyimport("imgaug"))
+    @pyinclude("src/data/augment.py")
+end
+
+function get_augmenter()
+    return pycall(py"augment", PyObject)
 end
 
 struct LabeledMainDataset
@@ -77,7 +80,7 @@ struct LabeledMainDataset
             config["num_throts"],
             config["multi_cam"],
             num_frames,
-            augment(),
+            get_augmenter(),
             idx_map,
             yaw_map,
             json_map,
@@ -122,7 +125,7 @@ end
 
 function augment_img(augmenter::PyObject, img::Array)
     #TODO: use PyCall to call preprocessing here.
-    return augmenter(img)
+    return augmenter(images=reshape(img, (1,size(img))))
 end
 
 function Base.getindex(d::LabeledMainDataset, idx::Int)
@@ -177,32 +180,6 @@ function Base.getindex(d::LabeledMainDataset, idx::Int)
         Float32(cmd[1]),
     )
 
-end
-
-function augment(prob = 0.2)
-    iaa = ia.augmenters
-    return iaa.Sequential(  
-        [
-            iaa.Sometimes(prob, iaa.GaussianBlur((0, 0.5))),
-            iaa.Sometimes(
-                prob,
-                iaa.AdditiveGaussianNoise(
-                    loc = 0,
-                    scale = (0.0, 0.05 * 255),
-                    per_channel = 0.5,
-                ),
-            ),
-            iaa.Sometimes(prob, iaa.Dropout((0.01, 0.1), per_channel = 0.5)),
-            iaa.Sometimes(prob, iaa.Multiply((1 / 1.2, 1.2), per_channel = 0.5)),
-            iaa.Sometimes(prob, iaa.LinearContrast((1 / 1.2, 1.2), per_channel = 0.5)),
-            iaa.Sometimes(prob, iaa.Grayscale((0.0, 1))),
-            iaa.Sometimes(
-                prob,
-                iaa.ElasticTransformation(alpha = (0.5, 3.5), sigma = 0.25),
-            ),
-        ],
-        random_order = true,
-    )
 end
 
 struct LabeledMainDatasetLoader
