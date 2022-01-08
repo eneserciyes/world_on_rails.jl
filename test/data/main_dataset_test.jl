@@ -24,9 +24,7 @@ import main_dataset:LabeledMainDataset
     @test isa(wide_rgb, KnetArray{UInt8})
     @test isa(narr_rgb, KnetArray{UInt8})
     @test size(wide_rgb) == (1, 240 - main_dataset.wide_crop_top + 1,480,3)
-
-    # test rgb image augmentations
-    #TODO
+    
 end
 
 @testset "PyCall tests" begin
