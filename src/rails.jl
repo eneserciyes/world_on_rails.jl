@@ -96,7 +96,7 @@ function train_main(
     # no change for spds and cmds
 
     # pass through model
-    act_probs = softmax(act_vals, dims = 4) #TODO: check if softmax value is same
+    act_probs = softmax(act_vals./r.config["temperature"], dims = 3); #TODO: check if softmax value is same
     if r.config["use_narr_cam"]
         (act_outputs, wide_seg_outputs, narr_seg_outputs) = r.main_model(
             wide_rgbs,
