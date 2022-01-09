@@ -1,9 +1,10 @@
 module rails
 export RAILS
 
-push!(LOAD_PATH, joinpath(pwd(), "models"))
-push!(LOAD_PATH, joinpath(pwd(), "data"))
+push!(LOAD_PATH, joinpath(pwd(), "src", "models"))
+push!(LOAD_PATH, joinpath(pwd(), "src", "data"))
 
+using Knet
 using Knet: Adam, softmax, logsoftmax
 using models: set_optim!, zero_grad_model, train!
 using Statistics: mean
@@ -23,19 +24,19 @@ struct RAILS
 
     function RAILS(args)
         config = nothing
-        open(args.config_path, 'r') do cfg_file
+        open(args["config"], "r") do cfg_file
             config = YAML.load(cfg_file)
         end
 
         # create ego model
-        ego_model = EgoModel(1 / (args.fps * (args.num_repeat + 1)))
-        set_optim!(ego_model, Adam, args.lr)
+        ego_model = EgoModel(1 / (args["fps"] * (args["num-repeat"] + 1)))
+        set_optim!(ego_model, Adam, args["lr"])
 
         # create main_model
         main_model = MainModel(config)
-        set_optim!(main_model, Adam, args.lr)
+        set_optim!(main_model, Adam, args["lr"])
 
-        new(config, args.device, ego_model, main_model)
+        new(config, args["device"], ego_model, main_model)
     end
 end
 
@@ -91,7 +92,7 @@ function train_main(
     wide_sems = KnetArray{Int64}(Int64.(wide_sems))
     narr_sems = KnetArray{Int64}(Int64.(narr_sems))
 
-    act_vals = KnetArray{Float32}(permutedims(act_vals, (1, 2, 4, 3)))
+    act_vals = KnetArray{Float32}(permutedims(act_vals, (1, 3, 2, 4)));
     # no change for spds and cmds
 
     # pass through model
@@ -133,7 +134,8 @@ function train_main(
     if r.config["use_narr_cam"]
         seg_loss = seg_loss + 0 #TODO: cross-entropy narr_sems
         seg_loss = seg_loss / 2
-    
+    end
+
     loss = @diff act_loss + r.config["seg_weight"] * seg_loss
 
     # backpropagate

@@ -10,3 +10,4 @@ end
 function kl_div()
     #TODO: implement kl_div loss
 end
+end

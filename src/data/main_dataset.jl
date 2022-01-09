@@ -137,6 +137,7 @@ function Base.getindex(d::LabeledMainDataset, idx::Int)
 
     index = d.idx_map[idx] - 1 # json idxs start from zero
     cam_index = d.yaw_map[idx] - 1 # cam idxs in json start from zero
+    @show cam_index
     data_json = d.json_map[idx]
     path = d.path_map[idx]
 
@@ -168,7 +169,6 @@ function Base.getindex(d::LabeledMainDataset, idx::Int)
     narr_rgb = narr_rgb[begin:end-d.narr_crop_bottom, :, :]
     narr_sem = narr_sem[begin:end-d.narr_crop_bottom, :]
 
-    @show(size(wide_rgb))
     #Augment
     if d.augment
         wide_rgb = augment_img(d.augmenter, wide_rgb)

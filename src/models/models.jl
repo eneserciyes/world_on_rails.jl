@@ -7,16 +7,19 @@ function zero_grad_model(model)
     for p in params(model)
         zero_grad(p.opt)
     end
+end
 
 function zero_grad(optim::Adam)
     # gradient resetting
     layer1.opt.fstm = Nothing
     layer1.opt.scndm = Nothing
+end
 
 function set_optim!(model, optim, learning_rate)
     for p in params(model)
         p.opt = optim(lr=learning_rate)
     end
+end
 
 function train!(model, L)
     for p in params(model)
