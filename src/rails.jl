@@ -113,11 +113,10 @@ function train_main(
     #TODO: test every part correctness with random input.
 
     if r.config["all_speeds"]
-        act_loss = kl_div(logsoftmax(act_outputs, dims=4), act_probs, reduction="none")
-        act_loss = mean(act_loss, dims=[3,4])
+        act_loss = kl_div(logsoftmax(act_outputs, dims=3), act_probs, reduced=true)
     else
         act_probs = spd_lerp(act_probs, spds)
-        act_loss = kl_div(logsoftmax(act_outputs, dims=3), act_probs, reduction="none")
+        act_loss = kl_div(logsoftmax(act_outputs, dims=3), act_probs, reduced=false)
         act_loss = mean(act_loss, dims=2)
     end
 

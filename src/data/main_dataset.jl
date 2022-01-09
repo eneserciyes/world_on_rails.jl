@@ -137,7 +137,6 @@ function Base.getindex(d::LabeledMainDataset, idx::Int)
 
     index = d.idx_map[idx] - 1 # json idxs start from zero
     cam_index = d.yaw_map[idx] - 1 # cam idxs in json start from zero
-    @show cam_index
     data_json = d.json_map[idx]
     path = d.path_map[idx]
 
