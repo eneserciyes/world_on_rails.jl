@@ -12,7 +12,7 @@ function kl_div(input::KnetArray, target::KnetArray, reduced=true)
     # add a float for numerical stability.
     kl = target .* (log.(target .+ Float32(1e-30)) .- input)
     if reduced
-        return mean(mean(reduced, 2),3)
+        return reshape(mean(mean(kl, dims= 2),dims=3), (1,size(kl,4)))
     end
     return kl
 end

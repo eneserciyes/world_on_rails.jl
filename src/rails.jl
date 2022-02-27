@@ -1,5 +1,5 @@
 module rails
-export RAILS
+export RAILS, spd_lerp
 
 push!(LOAD_PATH, joinpath(pwd(), "src", "models"))
 push!(LOAD_PATH, joinpath(pwd(), "src", "data"))
@@ -170,6 +170,7 @@ end
 
 function spd_lerp(v, x)
     #TODO: implement spd_lerp
+    
 end
 
 end
